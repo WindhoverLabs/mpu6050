@@ -804,7 +804,7 @@ void MPU6050::ReadDevice(void)
     /* Temperature */
     SensorGyro.TemperatureRaw = SensorAccel.TemperatureRaw = (int16) rawTemp;
 
-    calTemp = (SensorAccel.TemperatureRaw / Diag.Conversion.TempSensitivity) + 21.0 - Diag.Conversion.RoomTempOffset;
+    calTemp = (SensorAccel.TemperatureRaw / Diag.Conversion.TempSensitivity) + 36.53f - Diag.Conversion.RoomTempOffset;
     SensorGyro.Temperature  = calTemp;
     SensorAccel.Temperature = calTemp;
 
