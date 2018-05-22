@@ -685,7 +685,7 @@ void MPU6050::ReadDevice(void)
     float calY_f       = 0;
     float calZ_f       = 0;
     uint64 timeStamp   = 0;
-    uint16 rawTemp     = 0;
+    int16 rawTemp      = 0;
     int16 calTemp      = 0;
     boolean returnBool = TRUE;
     math::Vector3F gval;
