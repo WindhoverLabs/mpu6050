@@ -108,8 +108,9 @@ int32 MPU6050::InitEvent()
      * (the default) has been provided as an example. */
     EventTbl[  ind].EventID = MPU6050_RESERVED_EID;
     EventTbl[ind++].Mask    = CFE_EVS_NO_FILTER;
-    EventTbl[  ind].EventID = MPU6050_READ_ERR_EID;
-    EventTbl[ind++].Mask    = CFE_EVS_FIRST_16_STOP;
+    /* TODO add back in after debug. */
+    //EventTbl[  ind].EventID = MPU6050_READ_ERR_EID;
+    //EventTbl[ind++].Mask    = CFE_EVS_FIRST_16_STOP;
 
     /* Add custom events to the filter table */
     customEventCount = MPU6050_Custom_Init_EventFilters(ind, EventTbl);
@@ -809,6 +810,7 @@ void MPU6050::ReadDevice(void)
 
 end_of_function:
 
+    /* TODO remove after debug. */
     if(FALSE == returnBool)
     {
         (void) CFE_EVS_SendEvent(MPU6050_READ_ERR_EID, CFE_EVS_ERROR,
