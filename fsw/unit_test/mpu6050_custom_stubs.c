@@ -71,52 +71,20 @@ boolean MPU6050_SetGyroScale(uint32 Scale, float *GyroDivider)
     return TRUE;
 }
 
-boolean MPU6050_Read_Gyro(int16 *X, int16 *Y, int16 *Z)
+
+boolean MPU6050_Measure(int16 *GX, int16 *GY, int16 *GZ, int16 *AX, int16 *AY, int16 *AZ, int16 *Temp)
 {
-    *X = MPU6050_Custom_Returns.MPU6050_Read_Gyro_X_Value;
-    *Y = MPU6050_Custom_Returns.MPU6050_Read_Gyro_Y_Value;
-    *Z = MPU6050_Custom_Returns.MPU6050_Read_Gyro_Z_Value;
-    return MPU6050_Custom_Returns.MPU6050_Read_Gyro_Return;
-}
-
-
-boolean MPU6050_Read_Accel(int16 *X, int16 *Y, int16 *Z)
-{
-    *X = MPU6050_Custom_Returns.MPU6050_Read_Accel_X_Value;
-    *Y = MPU6050_Custom_Returns.MPU6050_Read_Accel_Y_Value;
-    *Z = MPU6050_Custom_Returns.MPU6050_Read_Accel_Z_Value;
-    return MPU6050_Custom_Returns.MPU6050_Read_Accel_Return;
-}
-
-
-boolean MPU6050_Read_Mag(int16 *X, int16 *Y, int16 *Z)
-{
-    return TRUE;
-}
-
-
-boolean MPU6050_Read_Temp(uint16 *Temp)
-{
+    *GX = MPU6050_Custom_Returns.MPU6050_Read_Gyro_X_Value;
+    *GY = MPU6050_Custom_Returns.MPU6050_Read_Gyro_Y_Value;
+    *GZ = MPU6050_Custom_Returns.MPU6050_Read_Gyro_Z_Value;
+    *AX = MPU6050_Custom_Returns.MPU6050_Read_Accel_X_Value;
+    *AY = MPU6050_Custom_Returns.MPU6050_Read_Accel_Y_Value;
+    *AZ = MPU6050_Custom_Returns.MPU6050_Read_Accel_Z_Value;
     *Temp = MPU6050_Custom_Returns.MPU6050_Read_Temp_Value;
-    return MPU6050_Custom_Returns.MPU6050_Read_Temp_Return;
-}
-
-
-boolean MPU6050_Read_ImuStatus(boolean *WOM, boolean *FifoOvflw, boolean *Fsync, boolean *DataReady)
-{
-    return TRUE;
-}
-
-
-boolean MPU6050_Read_MagStatus(boolean *Overrun, boolean *DataReady, boolean *Overflow, boolean *Output16Bit)
-{
-    return TRUE;
-}
-
-
-boolean MPU6050_Read_MagAdj(uint8 *X, uint8 *Y, uint8 *Z)
-{
-    return TRUE;
+    /* TODO add single return. */
+    return (MPU6050_Custom_Returns.MPU6050_Read_Gyro_Return &&
+    MPU6050_Custom_Returns.MPU6050_Read_Accel_Return &&
+    MPU6050_Custom_Returns.MPU6050_Read_Temp_Return);
 }
 
 

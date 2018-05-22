@@ -69,8 +69,6 @@ MPU6050::MPU6050() :
     _gyro_filter_x(MPU6050_GYRO_SAMPLE_RATE, MPU6050_GYRO_FILTER_CUTOFF_FREQ),
     _gyro_filter_y(MPU6050_GYRO_SAMPLE_RATE, MPU6050_GYRO_FILTER_CUTOFF_FREQ),
     _gyro_filter_z(MPU6050_GYRO_SAMPLE_RATE, MPU6050_GYRO_FILTER_CUTOFF_FREQ),
-    //_accel_int(MPU6050_NEVER_AUTOPUBLISH_US, FALSE),
-    //_gyro_int(MPU6050_NEVER_AUTOPUBLISH_US, TRUE)
     _accel_int(MPU6050_ACCEL_INT_PUB_RATE, TRUE),
     _gyro_int(MPU6050_GYRO_INT_PUB_RATE, TRUE)
 {
@@ -384,8 +382,6 @@ int32 MPU6050::RcvSchPipeMsg(int32 iBlocking)
         {
             case MPU6050_MEASURE_MID:
             {
-                //static uint32 i = 0;
-
                 ReadDevice();
                 SendSensorGyro();
                 SendSensorAccel();
@@ -704,7 +700,9 @@ void MPU6050::ReadDevice(void)
     SensorAccel.Timestamp = timeStamp;
 
     /* Gyro */
-    returnBool = MPU6050_Read_Gyro(&SensorGyro.XRaw, &SensorGyro.YRaw, &SensorGyro.ZRaw);
+    returnBool = MPU6050_Measure(&SensorGyro.XRaw, &SensorGyro.YRaw, &SensorGyro.ZRaw,
+                                 &SensorAccel.XRaw, &SensorAccel.YRaw, &SensorAccel.ZRaw,
+                                 &rawTemp);
     if(FALSE == returnBool)
     {
         goto end_of_function;
@@ -757,12 +755,6 @@ void MPU6050::ReadDevice(void)
     SensorGyro.DeviceID = MPU6050_GYRO_PX4_DEVICE_ID;
 
     /* Accel */
-    returnBool = MPU6050_Read_Accel(&SensorAccel.XRaw, &SensorAccel.YRaw, &SensorAccel.ZRaw);
-    if(FALSE == returnBool)
-    {
-        goto end_of_function;
-    }
-
     rawX_f = SensorAccel.XRaw;
     rawY_f = SensorAccel.YRaw;
     rawZ_f = SensorAccel.ZRaw;
@@ -809,12 +801,6 @@ void MPU6050::ReadDevice(void)
     SensorAccel.DeviceID = MPU6050_ACCEL_PX4_DEVICE_ID;
 
     /* Temperature */
-    returnBool = MPU6050_Read_Temp(&rawTemp);
-    if(FALSE == returnBool)
-    {
-        goto end_of_function;
-    }
-
     SensorGyro.TemperatureRaw = SensorAccel.TemperatureRaw = (int16) rawTemp;
 
     calTemp = (SensorAccel.TemperatureRaw / Diag.Conversion.TempSensitivity) + 21.0 - Diag.Conversion.RoomTempOffset;

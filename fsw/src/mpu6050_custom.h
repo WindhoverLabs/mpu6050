@@ -172,54 +172,25 @@ boolean MPU6050_SetGyroScale(uint32 Scale, float *GyroDivider);
 **       Initialization must be completed before this function is 
 **       called.
 **
-**  \param [out]   X      Raw X-axis value.
+**  \param [in/out]   X      Raw GX-axis value.
 **
-**  \param [out]   Y      Raw Y-axis value.
+**  \param [in/out]   Y      Raw GY-axis value.
 **
-**  \param [out]   Z      Raw Z-axis value.
+**  \param [in/out]   Z      Raw GZ-axis value.
+**
+**  \param [in/out]   X      Raw AX-axis value.
+**
+**  \param [in/out]   Y      Raw AY-axis value.
+**
+**  \param [in/out]   Z      Raw AZ-axis value.
+**
+**  \param [in/out]   Temp   Raw temperature value.
 **
 **  \returns TRUE for success, FALSE for failure.
 **
 *************************************************************************/
-boolean MPU6050_Read_Gyro(int16 *X, int16 *Y, int16 *Z);
+boolean MPU6050_Measure(int16 *GX, int16 *GY, int16 *GZ, int16 *AX, int16 *AY, int16 *AZ, int16 *Temp);
 
-/************************************************************************/
-/** \brief Read raw accel data.
-**
-**  \par Description
-**       This function reads raw X-axis, Y-axis, and Z-axis accel data.
-**
-**  \par Assumptions, External Events, and Notes:
-**       Initialization must be completed before this function is 
-**       called. 
-**
-**  \param [out]   X      Raw X-axis value.
-**
-**  \param [out]   Y      Raw Y-axis value.
-**
-**  \param [out]   Z      Raw Z-axis value.
-**
-**  \returns TRUE for success, FALSE for failure.
-**
-*************************************************************************/
-boolean MPU6050_Read_Accel(int16 *X, int16 *Y, int16 *Z);
-
-/************************************************************************/
-/** \brief Read raw temperature data.
-**
-**  \par Description
-**       This function reads raw temperature data.
-**
-**  \par Assumptions, External Events, and Notes:
-**       Initialization must be completed before this function is 
-**       called. 
-**
-**  \param [out]   Temp    Raw temperature value.
-**
-**  \returns TRUE for success, FALSE for failure.
-**
-*************************************************************************/
-boolean MPU6050_Read_Temp(uint16 *Temp);
 
 /************************************************************************/
 /** \brief Get platform rotation.
@@ -235,8 +206,6 @@ boolean MPU6050_Read_Temp(uint16 *Temp);
 *************************************************************************/
 void MPU6050_Get_Rotation(uint8 *Rotation);
 
-/* TODO */
-//boolean MPU6050_Read_ImuStatus(boolean *WOM, boolean *FifoOvflw, boolean *Fsync, boolean *DataReady);
 
 /************************************************************************/
 /** \brief Apply the platform rotation to measurements.
@@ -260,6 +229,7 @@ void MPU6050_Get_Rotation(uint8 *Rotation);
 *************************************************************************/
 boolean MPU6050_Apply_Platform_Rotation(float *X, float *Y, float *Z);
 
+
 /************************************************************************/
 /** \brief Returns the device ID of the MPU6050.
 **
@@ -282,4 +252,4 @@ boolean MPU6050_Read_WhoAmI(uint8 *Value);
 }
 #endif 
 
-#endif /* RGBLED_CUSTOM_H */
+#endif /* MPU6050_CUSTOM_H */
