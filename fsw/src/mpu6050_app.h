@@ -57,10 +57,12 @@ extern "C" {
 #include "px4_msgs.h"
 #include "math/filters/LowPassFilter2p.hpp"
 #include "math/Integrator.hpp"
+#include "mpu6050_custom.h"
 
 /************************************************************************
  ** Local Defines
  *************************************************************************/
+#define MPU6050_MAX_FIFO_LENGTH              (1024)
 
 /************************************************************************
  ** Local Structure Definitions
@@ -129,6 +131,7 @@ public:
     /** \brief Output Data published at the end of cycle */
     PX4_SensorAccelMsg_t SensorAccel;
     PX4_SensorGyroMsg_t SensorGyro;
+    MPU6050_SampleQueue_t MPU6050_SampleQueue;
 
     /** \brief Housekeeping Telemetry for downlink */
     MPU6050_HkTlm_t HkTlm;
@@ -366,7 +369,7 @@ public:
      **       None
      **
      *************************************************************************/
-    void ReadDevice(void);
+     void ReadDevice(void);
 
     /** \brief Validate device IDs.
      **

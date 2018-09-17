@@ -40,7 +40,6 @@
 *************************************************************************/
 #include <string.h>
 #include "cfe.h"
-#include "mpu6050_custom.h"
 #include "mpu6050_app.h"
 #include "mpu6050_msg.h"
 #include "mpu6050_version.h"
@@ -243,6 +242,8 @@ void MPU6050::InitData()
     Diag.Conversion.TempSensitivity = MPU6050_TEMP_SENS;
     /* Start initialization of user calibration values */
     UpdateParamsFromTable();
+    /* Initialize the sample queue struct. */
+    memset(&MPU6050_SampleQueue, 0, sizeof(MPU6050_SampleQueue));
 }
 
 
@@ -692,6 +693,14 @@ void MPU6050::ReadDevice(void)
     math::Vector3F gval_integrated;
     math::Vector3F aval;
     math::Vector3F aval_integrated;
+    int i = 0;
+
+    SensorGyro.XIntegral = 0;
+    SensorGyro.YIntegral = 0;
+    SensorGyro.ZIntegral = 0;
+    SensorAccel.XIntegral = 0;
+    SensorAccel.YIntegral = 0;
+    SensorAccel.ZIntegral = 0;
 
     /* Get a timestamp */
     timeStamp = PX4LIB_GetPX4TimeUs();
@@ -700,113 +709,125 @@ void MPU6050::ReadDevice(void)
     SensorGyro.Timestamp  = timeStamp;
     SensorAccel.Timestamp = timeStamp;
 
-    /* Gyro */
-    returnBool = MPU6050_Measure(&SensorGyro.XRaw, &SensorGyro.YRaw, &SensorGyro.ZRaw,
-                                 &SensorAccel.XRaw, &SensorAccel.YRaw, &SensorAccel.ZRaw,
-                                 &rawTemp);
+    /* Get a measurement. */
+    returnBool = MPU6050_Measure(&MPU6050_SampleQueue);
     if(FALSE == returnBool)
     {
         goto end_of_function;
     }
 
-    rawX_f = SensorGyro.XRaw;
-    rawY_f = SensorGyro.YRaw;
-    rawZ_f = SensorGyro.ZRaw;
-
-    returnBool = MPU6050_Apply_Platform_Rotation(&rawX_f, &rawY_f, &rawZ_f);
-    if(FALSE == returnBool)
+    for(i = 0; i < MPU6050_SampleQueue.SampleCount; ++i)
     {
-        goto end_of_function;
+        SensorGyro.XRaw = MPU6050_SampleQueue.Samples[i].GX;
+        SensorGyro.YRaw = MPU6050_SampleQueue.Samples[i].GY;
+        SensorGyro.ZRaw = MPU6050_SampleQueue.Samples[i].GZ;
+        SensorAccel.XRaw = MPU6050_SampleQueue.Samples[i].AX;
+        SensorAccel.YRaw = MPU6050_SampleQueue.Samples[i].AY;
+        SensorAccel.ZRaw = MPU6050_SampleQueue.Samples[i].AZ;
+        rawTemp = MPU6050_SampleQueue.Samples[i].Temp;
+
+        rawX_f = SensorGyro.XRaw;
+        rawY_f = SensorGyro.YRaw;
+        rawZ_f = SensorGyro.ZRaw;
+    
+        returnBool = MPU6050_Apply_Platform_Rotation(&rawX_f, &rawY_f, &rawZ_f);
+        if(FALSE == returnBool)
+        {
+            goto end_of_function;
+        }
+    
+        /* Gyro unit conversion */
+        calX_f = rawX_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
+        calY_f = rawY_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
+        calZ_f = rawZ_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider); 
+        
+        /* Gyro Calibrate */
+        calX_f = (calX_f - m_Params.GyroXOffset) * m_Params.GyroXScale;
+        calY_f = (calY_f - m_Params.GyroYOffset) * m_Params.GyroYScale;
+        calZ_f = (calZ_f - m_Params.GyroZOffset) * m_Params.GyroZScale;
+    
+        /* Gyro Filter */
+        SensorGyro.X = _gyro_filter_x.apply(calX_f);
+        SensorGyro.Y = _gyro_filter_y.apply(calY_f);
+        SensorGyro.Z = _gyro_filter_z.apply(calZ_f);
+    
+        /* Gyro Integrate */
+        gval[0] = SensorGyro.X;
+        gval[1] = SensorGyro.Y;
+        gval[2] = SensorGyro.Z;
+        gval_integrated[0] = 0.0f;
+        gval_integrated[1] = 0.0f;
+        gval_integrated[2] = 0.0f;
+
+        _gyro_int.put_with_interval(MPU6050_SampleQueue.SampleIntervalUs, 
+                gval, gval_integrated, SensorGyro.IntegralDt);
+
+        /* Sum rotation rate. */
+        SensorGyro.XIntegral += gval_integrated[0];
+        SensorGyro.YIntegral += gval_integrated[1];
+        SensorGyro.ZIntegral += gval_integrated[2];
+    
+        /* Gyro Scale, Range, DeviceID */
+        SensorGyro.Scaling = (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
+        SensorGyro.Range   = (Diag.Conversion.AccScale * Diag.Conversion.GyroUnit);
+
+        /* TODO deviceID */
+        /* SensorGyro.DeviceID = MPU6050_GYRO_PX4_DEVICE_ID; */
+
+        /* Accel */
+        rawX_f = SensorAccel.XRaw;
+        rawY_f = SensorAccel.YRaw;
+        rawZ_f = SensorAccel.ZRaw;
+
+        returnBool = MPU6050_Apply_Platform_Rotation(&rawX_f, &rawY_f, &rawZ_f);
+        if(FALSE == returnBool)
+        {
+            goto end_of_function;
+        }
+        /* Accel unit conversion */
+        calX_f = rawX_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
+        calY_f = rawY_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
+        calZ_f = rawZ_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
+        
+        /* Accel Calibrate */
+        calX_f = (calX_f - m_Params.AccXOffset) * m_Params.AccXScale;
+        calY_f = (calY_f - m_Params.AccYOffset) * m_Params.AccYScale;
+        calZ_f = (calZ_f - m_Params.AccZOffset) * m_Params.AccZScale;
+    
+        /* Accel Filter */
+        SensorAccel.X = _accel_filter_x.apply(calX_f);
+        SensorAccel.Y = _accel_filter_y.apply(calY_f);
+        SensorAccel.Z = _accel_filter_z.apply(calZ_f);
+    
+        /* Accel Integrate */
+        aval[0] = SensorAccel.X;
+        aval[1] = SensorAccel.Y;
+        aval[2] = SensorAccel.Z;
+        aval_integrated[0] = 0.0f;
+        aval_integrated[1] = 0.0f;
+        aval_integrated[2] = 0.0f;
+    
+        _accel_int.put_with_interval(MPU6050_SampleQueue.SampleIntervalUs, 
+                aval, aval_integrated, SensorAccel.IntegralDt);
+        
+        /* Sum of velocity. */
+        SensorAccel.XIntegral += aval_integrated[0];
+        SensorAccel.YIntegral += aval_integrated[1];
+        SensorAccel.ZIntegral += aval_integrated[2];
+
+        /* Accel Scale, Range, DeviceID */
+        SensorAccel.Scaling = (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
+        SensorAccel.Range_m_s2 = (Diag.Conversion.AccScale * Diag.Conversion.AccUnit);
+
+        /* TODO deviceID */
+        /* SensorAccel.DeviceID = MPU6050_ACCEL_PX4_DEVICE_ID; */
+
+        /* Temperature */
+        SensorGyro.TemperatureRaw = SensorAccel.TemperatureRaw = (int16) rawTemp;
+        calTemp = (SensorAccel.TemperatureRaw / Diag.Conversion.TempSensitivity) + 36.53f - Diag.Conversion.RoomTempOffset;
+        SensorGyro.Temperature  = calTemp;
+        SensorAccel.Temperature = calTemp;
     }
-    
-    /* Gyro unit conversion */
-    calX_f = rawX_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
-    calY_f = rawY_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
-    calZ_f = rawZ_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider); 
-    
-    /* Gyro Calibrate */
-    calX_f = (calX_f - m_Params.GyroXOffset) * m_Params.GyroXScale;
-    calY_f = (calY_f - m_Params.GyroYOffset) * m_Params.GyroYScale;
-    calZ_f = (calZ_f - m_Params.GyroZOffset) * m_Params.GyroZScale;
-
-    /* Gyro Filter */
-    SensorGyro.X = _gyro_filter_x.apply(calX_f);
-    SensorGyro.Y = _gyro_filter_y.apply(calY_f);
-    SensorGyro.Z = _gyro_filter_z.apply(calZ_f);
-
-    /* Gyro Integrate */
-    gval[0] = SensorGyro.X;
-    gval[1] = SensorGyro.Y;
-    gval[2] = SensorGyro.Z;
-    gval_integrated[0] = 0.0f;
-    gval_integrated[1] = 0.0f;
-    gval_integrated[2] = 0.0f;
-
-    _gyro_int.put(timeStamp, gval, gval_integrated, SensorGyro.IntegralDt);
-    
-    SensorGyro.XIntegral = gval_integrated[0];
-    SensorGyro.YIntegral = gval_integrated[1];
-    SensorGyro.ZIntegral = gval_integrated[2];
-    
-    /* Gyro Scale, Range, DeviceID */
-    SensorGyro.Scaling = (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
-    SensorGyro.Range   = (Diag.Conversion.AccScale * Diag.Conversion.GyroUnit);
-
-    /* TODO deviceID */
-    SensorGyro.DeviceID = MPU6050_GYRO_PX4_DEVICE_ID;
-
-    /* Accel */
-    rawX_f = SensorAccel.XRaw;
-    rawY_f = SensorAccel.YRaw;
-    rawZ_f = SensorAccel.ZRaw;
-
-    returnBool = MPU6050_Apply_Platform_Rotation(&rawX_f, &rawY_f, &rawZ_f);
-    if(FALSE == returnBool)
-    {
-        goto end_of_function;
-    }
-    /* Accel unit conversion */
-    calX_f = rawX_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
-    calY_f = rawY_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
-    calZ_f = rawZ_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
-    
-    /* Accel Calibrate */
-    calX_f = (calX_f - m_Params.AccXOffset) * m_Params.AccXScale;
-    calY_f = (calY_f - m_Params.AccYOffset) * m_Params.AccYScale;
-    calZ_f = (calZ_f - m_Params.AccZOffset) * m_Params.AccZScale;
-
-    /* Accel Filter */
-    SensorAccel.X = _accel_filter_x.apply(calX_f);
-    SensorAccel.Y = _accel_filter_y.apply(calY_f);
-    SensorAccel.Z = _accel_filter_z.apply(calZ_f);
-
-    /* Accel Integrate */
-    aval[0] = SensorAccel.X;
-    aval[1] = SensorAccel.Y;
-    aval[2] = SensorAccel.Z;
-    aval_integrated[0] = 0.0f;
-    aval_integrated[1] = 0.0f;
-    aval_integrated[2] = 0.0f;
-
-    _accel_int.put(timeStamp, aval, aval_integrated, SensorAccel.IntegralDt);
-    
-    SensorAccel.XIntegral = aval_integrated[0];
-    SensorAccel.YIntegral = aval_integrated[1];
-    SensorAccel.ZIntegral = aval_integrated[2];
-
-    /* Accel Scale, Range, DeviceID */
-    SensorAccel.Scaling = (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
-    SensorAccel.Range_m_s2 = (Diag.Conversion.AccScale * Diag.Conversion.AccUnit);
-
-    /* TODO deviceID */
-    SensorAccel.DeviceID = MPU6050_ACCEL_PX4_DEVICE_ID;
-
-    /* Temperature */
-    SensorGyro.TemperatureRaw = SensorAccel.TemperatureRaw = (int16) rawTemp;
-
-    calTemp = (SensorAccel.TemperatureRaw / Diag.Conversion.TempSensitivity) + 36.53f - Diag.Conversion.RoomTempOffset;
-    SensorGyro.Temperature  = calTemp;
-    SensorAccel.Temperature = calTemp;
 
 end_of_function:
 

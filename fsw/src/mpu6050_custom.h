@@ -50,10 +50,29 @@ extern "C" {
 /************************************************************************
 ** Local Defines
 *************************************************************************/
+#define MPU6050_MAX_FIFO_LENGTH              (1024)
 
 /************************************************************************
 ** Local Structure Definitions
 *************************************************************************/
+typedef struct
+{
+    int16 GX; 
+    int16 GY; 
+    int16 GZ; 
+    int16 AX; 
+    int16 AY; 
+    int16 AZ; 
+    int16 Temp;
+} MPU6050_Measurement_t;
+
+
+typedef struct
+{
+    MPU6050_Measurement_t Samples[MPU6050_MAX_FIFO_LENGTH];
+    int32 SampleIntervalUs;
+    int16 SampleCount;
+} MPU6050_SampleQueue_t;
 
 /************************************************************************
 ** External Global Variables
@@ -189,7 +208,7 @@ boolean MPU6050_SetGyroScale(uint32 Scale, float *GyroDivider);
 **  \returns TRUE for success, FALSE for failure.
 **
 *************************************************************************/
-boolean MPU6050_Measure(int16 *GX, int16 *GY, int16 *GZ, int16 *AX, int16 *AY, int16 *AZ, int16 *Temp);
+boolean MPU6050_Measure(MPU6050_SampleQueue_t *SampleQueue);
 
 
 /************************************************************************/
