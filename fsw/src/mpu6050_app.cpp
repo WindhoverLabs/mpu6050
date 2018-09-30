@@ -367,6 +367,7 @@ int32 MPU6050::RcvSchPipeMsg(int32 iBlocking)
     int32           iStatus = CFE_SUCCESS;
     CFE_SB_Msg_t*   MsgPtr  = NULL;
     CFE_SB_MsgId_t  MsgId;
+    boolean returnBool = FALSE;
 
     /* Stop Performance Log entry */
     CFE_ES_PerfLogExit(MPU6050_MAIN_TASK_PERF_ID);
@@ -384,9 +385,12 @@ int32 MPU6050::RcvSchPipeMsg(int32 iBlocking)
         {
             case MPU6050_MEASURE_MID:
             {
-                ReadDevice();
-                SendSensorGyro();
-                SendSensorAccel();
+                returnBool = ReadDevice();
+                if(TRUE == returnBool)
+                {
+                    SendSensorGyro();
+                    SendSensorAccel();
+                }
                 break;
             }
 
@@ -677,7 +681,7 @@ void MPU6050::AppMain()
 /* Read from the device                                            */
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-void MPU6050::ReadDevice(void)
+boolean MPU6050::ReadDevice(void)
 {
     float rawX_f       = 0;
     float rawY_f       = 0;
@@ -694,6 +698,7 @@ void MPU6050::ReadDevice(void)
     math::Vector3F aval;
     math::Vector3F aval_integrated;
     uint16 i = 0;
+    static boolean firstReadFlag = FALSE;
 
     /* Set integrals to zero. */
     SensorGyro.XIntegral = 0;
@@ -832,13 +837,14 @@ void MPU6050::ReadDevice(void)
 
 end_of_function:
 
-    /* TODO remove after debug. */
-    if(FALSE == returnBool)
+    /* First read should fail with fifo overflow. */
+    if(FALSE == returnBool && firstReadFlag != FALSE)
     {
         (void) CFE_EVS_SendEvent(MPU6050_READ_ERR_EID, CFE_EVS_ERROR,
                 "MPU6050 read failed");
     }
-    return;
+    firstReadFlag = TRUE;
+    return returnBool;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
