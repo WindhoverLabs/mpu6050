@@ -50,7 +50,7 @@ extern "C" {
 /************************************************************************
 ** Local Defines
 *************************************************************************/
-#define MPU6050_MAX_FIFO_LENGTH              (1024)
+#define MPU6050_MAX_FIFO_LENGTH              (74)
 
 /************************************************************************
 ** Local Structure Definitions
@@ -70,7 +70,7 @@ typedef struct
 typedef struct
 {
     MPU6050_Measurement_t Samples[MPU6050_MAX_FIFO_LENGTH];
-    int32 SampleIntervalUs;
+    uint32 SampleIntervalUs;
     int16 SampleCount;
 } MPU6050_SampleQueue_t;
 

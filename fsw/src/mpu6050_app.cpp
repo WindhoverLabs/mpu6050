@@ -693,8 +693,9 @@ void MPU6050::ReadDevice(void)
     math::Vector3F gval_integrated;
     math::Vector3F aval;
     math::Vector3F aval_integrated;
-    int i = 0;
+    uint16 i = 0;
 
+    /* Set integrals to zero. */
     SensorGyro.XIntegral = 0;
     SensorGyro.YIntegral = 0;
     SensorGyro.ZIntegral = 0;
@@ -729,28 +730,28 @@ void MPU6050::ReadDevice(void)
         rawX_f = SensorGyro.XRaw;
         rawY_f = SensorGyro.YRaw;
         rawZ_f = SensorGyro.ZRaw;
-    
+
         returnBool = MPU6050_Apply_Platform_Rotation(&rawX_f, &rawY_f, &rawZ_f);
         if(FALSE == returnBool)
         {
             goto end_of_function;
         }
-    
+
         /* Gyro unit conversion */
         calX_f = rawX_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
         calY_f = rawY_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
         calZ_f = rawZ_f * (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider); 
-        
+
         /* Gyro Calibrate */
         calX_f = (calX_f - m_Params.GyroXOffset) * m_Params.GyroXScale;
         calY_f = (calY_f - m_Params.GyroYOffset) * m_Params.GyroYScale;
         calZ_f = (calZ_f - m_Params.GyroZOffset) * m_Params.GyroZScale;
-    
+
         /* Gyro Filter */
         SensorGyro.X = _gyro_filter_x.apply(calX_f);
         SensorGyro.Y = _gyro_filter_y.apply(calY_f);
         SensorGyro.Z = _gyro_filter_z.apply(calZ_f);
-    
+
         /* Gyro Integrate */
         gval[0] = SensorGyro.X;
         gval[1] = SensorGyro.Y;
@@ -766,7 +767,7 @@ void MPU6050::ReadDevice(void)
         SensorGyro.XIntegral += gval_integrated[0];
         SensorGyro.YIntegral += gval_integrated[1];
         SensorGyro.ZIntegral += gval_integrated[2];
-    
+
         /* Gyro Scale, Range, DeviceID */
         SensorGyro.Scaling = (Diag.Conversion.GyroUnit / Diag.Conversion.GyroDivider);
         SensorGyro.Range   = (Diag.Conversion.AccScale * Diag.Conversion.GyroUnit);
@@ -788,17 +789,17 @@ void MPU6050::ReadDevice(void)
         calX_f = rawX_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
         calY_f = rawY_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
         calZ_f = rawZ_f * (Diag.Conversion.AccUnit / Diag.Conversion.AccDivider);
-        
+
         /* Accel Calibrate */
         calX_f = (calX_f - m_Params.AccXOffset) * m_Params.AccXScale;
         calY_f = (calY_f - m_Params.AccYOffset) * m_Params.AccYScale;
         calZ_f = (calZ_f - m_Params.AccZOffset) * m_Params.AccZScale;
-    
+
         /* Accel Filter */
         SensorAccel.X = _accel_filter_x.apply(calX_f);
         SensorAccel.Y = _accel_filter_y.apply(calY_f);
         SensorAccel.Z = _accel_filter_z.apply(calZ_f);
-    
+
         /* Accel Integrate */
         aval[0] = SensorAccel.X;
         aval[1] = SensorAccel.Y;
@@ -806,10 +807,10 @@ void MPU6050::ReadDevice(void)
         aval_integrated[0] = 0.0f;
         aval_integrated[1] = 0.0f;
         aval_integrated[2] = 0.0f;
-    
+
         _accel_int.put_with_interval(MPU6050_SampleQueue.SampleIntervalUs, 
                 aval, aval_integrated, SensorAccel.IntegralDt);
-        
+
         /* Sum of velocity. */
         SensorAccel.XIntegral += aval_integrated[0];
         SensorAccel.YIntegral += aval_integrated[1];
