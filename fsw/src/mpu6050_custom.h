@@ -191,19 +191,7 @@ boolean MPU6050_SetGyroScale(uint32 Scale, float *GyroDivider);
 **       Initialization must be completed before this function is 
 **       called.
 **
-**  \param [in/out]   X      Raw GX-axis value.
-**
-**  \param [in/out]   Y      Raw GY-axis value.
-**
-**  \param [in/out]   Z      Raw GZ-axis value.
-**
-**  \param [in/out]   X      Raw AX-axis value.
-**
-**  \param [in/out]   Y      Raw AY-axis value.
-**
-**  \param [in/out]   Z      Raw AZ-axis value.
-**
-**  \param [in/out]   Temp   Raw temperature value.
+**  \param [in/out]   SampleQueue      Raw gyro, accel, and temp samples.
 **
 **  \returns TRUE for success, FALSE for failure.
 **
