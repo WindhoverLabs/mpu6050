@@ -368,7 +368,7 @@ public:
      **       None
      **
      *************************************************************************/
-     void ReadDevice(void);
+     boolean ReadDevice(void);
 
     /** \brief Validate device IDs.
      **
