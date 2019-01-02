@@ -50,10 +50,29 @@ extern "C" {
 /************************************************************************
 ** Local Defines
 *************************************************************************/
+#define MPU6050_MAX_FIFO_LENGTH              (74)
 
 /************************************************************************
 ** Local Structure Definitions
 *************************************************************************/
+typedef struct
+{
+    int16 GX; 
+    int16 GY; 
+    int16 GZ; 
+    int16 AX; 
+    int16 AY; 
+    int16 AZ; 
+    int16 Temp;
+} MPU6050_Measurement_t;
+
+
+typedef struct
+{
+    MPU6050_Measurement_t Samples[MPU6050_MAX_FIFO_LENGTH];
+    uint32 SampleIntervalUs;
+    int16 SampleCount;
+} MPU6050_SampleQueue_t;
 
 /************************************************************************
 ** External Global Variables
@@ -172,24 +191,12 @@ boolean MPU6050_SetGyroScale(uint32 Scale, float *GyroDivider);
 **       Initialization must be completed before this function is 
 **       called.
 **
-**  \param [in/out]   X      Raw GX-axis value.
-**
-**  \param [in/out]   Y      Raw GY-axis value.
-**
-**  \param [in/out]   Z      Raw GZ-axis value.
-**
-**  \param [in/out]   X      Raw AX-axis value.
-**
-**  \param [in/out]   Y      Raw AY-axis value.
-**
-**  \param [in/out]   Z      Raw AZ-axis value.
-**
-**  \param [in/out]   Temp   Raw temperature value.
+**  \param [in/out]   SampleQueue      Raw gyro, accel, and temp samples.
 **
 **  \returns TRUE for success, FALSE for failure.
 **
 *************************************************************************/
-boolean MPU6050_Measure(int16 *GX, int16 *GY, int16 *GZ, int16 *AX, int16 *AY, int16 *AZ, int16 *Temp);
+boolean MPU6050_Measure(MPU6050_SampleQueue_t *SampleQueue);
 
 
 /************************************************************************/
