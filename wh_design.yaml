@@ -46,7 +46,7 @@
       struct: MPU6050_DiagPacket_t
   commands: 
     MPU6050_CMD_MID: 
-      msgid: 
+      msgID: 
       commands: 
         Noop: 
           cc: 0
@@ -61,13 +61,13 @@
           cc: 3
           struct: MPU6050_SetCalibrationCmd_t
     MPU6050_SEND_HK_MID: 
-      msgid: 
+      msgID: 
       commands: 
         SendHK: 
           cc: 0
           struct: MPU6050_NoArgCmd_t
     MPU6050_MEASURE_MID: 
-      msgid: 
+      msgID: 
       commands: 
         Measure: 
           cc: 0
