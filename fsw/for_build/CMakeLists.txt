@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 #############################################################################
-add_airliner_app_def(mpu6050
+buildliner_add_app_def(mpu6050
     FILE MPU6050
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/mpu6050_app.cpp
@@ -54,7 +54,7 @@ add_airliner_app_def(mpu6050
     DESIGN_DEFINITION   ${CMAKE_CURRENT_SOURCE_DIR}/mpu6050_msg_overrides.json
 )
 
-add_airliner_app_unit_test(mpu6050-ut
+buildliner_add_app_unit_test(mpu6050-ut
     UTASSERT
     NO_HELGRIND
     NO_MASSIF
